@@ -19,17 +19,22 @@ A compact, event-driven backtesting engine designed to demonstrate production-mi
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
-python examples/run_moving_average.py
+python examples/run_moving_average.py TSLA
+python examples/run_moving_average.py AAPL --start 2024-01-01 --end 2025-01-01
 pytest
 ```
 
 ## Architecture
 
 ```text
-CSV bars -> strategy -> signal -> order -> simulated broker -> fill -> portfolio -> analytics
+market-data adapter (Yahoo Finance or CSV) -> strategy -> signal -> order -> simulated broker -> fill -> portfolio -> analytics
 ```
 
-The project deliberately keeps its first version dependency-light. Future milestones: multi-asset calendars, corporate actions, order types, risk constraints, market-data adapters, parameter studies and performance reporting.
+Yahoo Finance data is fetched through `download_daily_bars(symbol, start, end)` in `backtest_engine.data`. The CSV adapter remains available as `load_daily_bars(path, symbol)` for deterministic research fixtures.
+
+`run_moving_average.py` accepts a ticker symbol plus optional ISO `--start` and `--end` dates. With no dates supplied, it uses the trailing two years of daily bars. Yahoo Finance treats the end date as exclusive.
+
+Future milestones: multi-asset calendars, corporate actions, order types, risk constraints, parameter studies and performance reporting.
 
 ## Repository roadmap
 
