@@ -14,7 +14,10 @@ A compact, event-driven backtesting engine designed to demonstrate production-mi
 - RSI mean-reversion strategy with overbought/oversold, take-profit and stop-loss exits
 - Donchian breakout strategy using prior high/low channels
 - Deterministic next-bar execution with configurable commission and slippage
-- Core analytics: total return, annualised volatility, Sharpe ratio and maximum drawdown
+- Trade logs with entry/exit prices, commissions and net profit
+- Strategy and buy-and-hold benchmark equity curves
+- Extended metrics including CAGR, Sortino, Calmar, win rate and profit factor
+- Parameter sweeps and rolling out-of-sample walk-forward evaluation
 - A research-oriented `run_strategy` helper for isolated strategy runs
 
 ## Strategy suite
@@ -78,13 +81,30 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 python examples/run_moving_average.py TSLA
+python examples/run_sp500_moving_average.py
+python examples/plot_summary.py
 pytest
 ```
+
+The S&P 500 research runner uses the configured 10-stock universe and writes its results to `research/sp500_ma/`. For each ticker it produces a combined strategy/benchmark equity curve, a trade log, a parameter-sweep result, and walk-forward results, plus the aggregate `summary.csv`. The period and universe are configurable:
+
+```bash
+python examples/run_sp500_moving_average.py --start 2024-01-01 --end 2025-01-01 --tickers TSLA AAPL MSFT
+```
+
+After the research run, generate five PNG charts from the summary CSV:
+
+```bash
+python examples/plot_summary.py
+python examples/plot_summary.py research/sp500_ma/summary.csv --output-dir research/sp500_ma/charts
+```
+
+The default output directory is `research/sp500_ma/charts/`. It contains total-return, maximum-drawdown, Sharpe-ratio, risk/return, and combined dashboard charts. Failed rows are excluded, and the input must contain both strategy and benchmark return fields.
 
 ## Roadmap
 
 1. Add strategy-specific tests and deterministic fixtures.
-2. Add a reusable parameter-grid research layer and visual parameter surfaces.
+2. Add visual parameter surfaces and portfolio-level aggregation across symbols.
 3. Add richer execution models: spread, market/limit orders and partial fills.
 4. Add risk controls and position sizing.
 5. Add multi-asset portfolios.
