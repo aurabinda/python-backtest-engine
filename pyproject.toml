@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "python-backtest-engine"
-version = "0.1.0"
+version = "0.2.0"
 description = "A small, testable event-driven backtesting engine for systematic trading research."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Aurabinda" }]
-dependencies = ["yfinance>=0.2.0"]
+dependencies = ["matplotlib>=3.8.0", "yfinance>=0.2.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
