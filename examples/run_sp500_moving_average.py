@@ -11,13 +11,13 @@ import csv
 from datetime import date
 from pathlib import Path
 
+from backtest_engine.analytics import summary
 from backtest_engine.data import download_daily_bars
 from backtest_engine.engine import run_strategy
 from backtest_engine.strategy import MovingAverageCrossStrategy
-from backtest_engine.analytics import summary
 
 # Easy-to-change research universe.
-# These are representative large-cap S&P 500 constituents; update this list whenever needed.
+# Update this list when you want to test a different set of symbols.
 TICKERS = ["NVDA", "MSFT", "AAPL", "AMZN", "META", "GOOGL", "AVGO", "GOOG", "TSLA", "BRK-B"]
 
 START_DATE = date(2023, 8, 26)
@@ -48,28 +48,38 @@ def main() -> None:
 
     for ticker in args.tickers:
         print(f"Running {ticker}: {start} -> {end}")
-        bars = download_daily_bars(ticker, start, end)
+        try:
+            bars = download_daily_bars(ticker, start, end)
+            equity_curve = run_strategy(
+                bars,
+                lambda: MovingAverageCrossStrategy(
+                    fast_window=FAST_WINDOW,
+                    slow_window=SLOW_WINDOW,
+                    target_quantity=TARGET_QUANTITY,
+                ),
+                initial_cash=INITIAL_CASH,
+            )
+            metrics = summary(equity_curve)
+            summary_rows.append({"ticker": ticker, "status": "OK", **metrics})
 
-        equity_curve = run_strategy(
-            bars,
-            lambda: MovingAverageCrossStrategy(
-                fast_window=FAST_WINDOW,
-                slow_window=SLOW_WINDOW,
-                target_quantity=TARGET_QUANTITY,
-            ),
-            initial_cash=INITIAL_CASH,
-        )
+            with (OUTPUT_DIR / f"{ticker}_equity_curve.csv").open("w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["date", "equity"])
+                writer.writerows(equity_curve)
+        except Exception as error:
+            print(f"  FAILED: {error}")
+            summary_rows.append({"ticker": ticker, "status": f"FAILED: {error}"})
 
-        metrics = summary(equity_curve)
-        summary_rows.append({"ticker": ticker, **metrics})
-
-        with (OUTPUT_DIR / f"{ticker}_equity_curve.csv").open("w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["date", "equity"])
-            writer.writerows(equity_curve)
-
+    fields = [
+        "ticker",
+        "status",
+        "total_return",
+        "annualised_volatility",
+        "sharpe_ratio",
+        "max_drawdown",
+    ]
     with (OUTPUT_DIR / "summary.csv").open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=["ticker", "total_return", "annualised_volatility", "sharpe_ratio", "max_drawdown"])
+        writer = csv.DictWriter(file, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(summary_rows)
 
